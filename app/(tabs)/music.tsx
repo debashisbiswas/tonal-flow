@@ -144,14 +144,12 @@ export default function MusicScreen() {
           source={require("@/assets/images/partial-react-logo.png")}
           style={styles.reactLogo}
         />
-      }
-    >
+      }>
       <ThemedText type="title">Music Notation</ThemedText>
       <WebView
         style={styles.container}
         originWhitelist={["*"]}
-        source={{ html: htmlContent }}
-      ></WebView>
+        source={{ html: htmlContent }}></WebView>
     </ParallaxScrollView>
   );
 }
