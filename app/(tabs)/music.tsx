@@ -13,6 +13,8 @@ interface MeasureNote {
     alter?: -1 | 1;
     octave: number;
   };
+
+  // Duration of the note in beats. Currently assumes 4/4.
   duration: 1 | 2 | 4;
 }
 
@@ -36,7 +38,7 @@ interface Measure {
   doubleBar?: boolean;
 }
 
-type Mode = "major" | "minor";
+type Mode = "major" | "minor" | "harmonic minor" | "melodic minor";
 
 function generateMusicXMLForScale(opts: {
   key: string;
@@ -139,7 +141,11 @@ function generateMusicXMLForScale(opts: {
     const key = (() => {
       if (opts.mode === "major") {
         return Key.majorKey(opts.key);
-      } else if (opts.mode === "minor") {
+      } else if (
+        opts.mode === "minor" ||
+        opts.mode === "harmonic minor" ||
+        opts.mode === "melodic minor"
+      ) {
         return Key.minorKey(opts.key);
       } else {
         const _never: never = opts.mode;
@@ -240,6 +246,8 @@ export default function MusicScreen() {
   }[] = [
     { label: "Major", value: "major" },
     { label: "Minor", value: "minor" },
+    { label: "Harmonic Minor", value: "harmonic minor" },
+    { label: "Melodic Minor", value: "melodic minor" },
   ];
 
   return (
@@ -269,8 +277,6 @@ export default function MusicScreen() {
         ))}
       </View>
 
-      <ThemedText>Key: {key}</ThemedText>
-      <ThemedText>Mode: {mode}</ThemedText>
       <ThemedText>Scale: {`${key} ${mode}`}</ThemedText>
       <WebView
         style={styles.container}
