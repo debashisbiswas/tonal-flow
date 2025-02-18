@@ -1,5 +1,5 @@
 import { WebView } from "react-native-webview";
-import { Image, StyleSheet } from "react-native";
+import { Button, Image, StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/ThemedText";
 
@@ -36,9 +36,11 @@ interface Measure {
   doubleBar?: boolean;
 }
 
+type Mode = "major" | "minor";
+
 function generateMusicXMLForScale(opts: {
   key: string;
-  mode: "major" | "minor";
+  mode: Mode;
   octaves: number;
 }) {
   const note = (note: MeasureNote) => {
@@ -175,12 +177,12 @@ function generateMusicXMLForScale(opts: {
 }
 
 export default function MusicScreen() {
-  const [key, setKey] = useState<string>("G");
-  const [mode, setMode] = useState<"major" | "minor">("major");
+  const [key, setKey] = useState<string>("C");
+  const [mode, setMode] = useState<Mode>("major");
 
   const xml = generateMusicXMLForScale({
-    key: "G",
-    mode: "major",
+    key,
+    mode,
     octaves: 2,
   });
 
@@ -217,6 +219,29 @@ export default function MusicScreen() {
 </html>
   `;
 
+  const availableKeys = [
+    "C",
+    "Db",
+    "D",
+    "Eb",
+    "E",
+    "F",
+    "Gb",
+    "G",
+    "Ab",
+    "A",
+    "Bb",
+    "B",
+  ];
+
+  const availableModes: {
+    label: string;
+    value: Mode;
+  }[] = [
+    { label: "Major", value: "major" },
+    { label: "Minor", value: "minor" },
+  ];
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
@@ -227,6 +252,23 @@ export default function MusicScreen() {
         />
       }>
       <ThemedText type="title">Music Notation</ThemedText>
+
+      <View style={styles.row}>
+        {availableKeys.map((key) => (
+          <Button key={key} onPress={() => setKey(key)} title={key} />
+        ))}
+      </View>
+
+      <View style={styles.row}>
+        {availableModes.map((mode) => (
+          <Button
+            key={mode.label}
+            onPress={() => setMode(mode.value)}
+            title={mode.label}
+          />
+        ))}
+      </View>
+
       <ThemedText>Key: {key}</ThemedText>
       <ThemedText>Mode: {mode}</ThemedText>
       <ThemedText>Scale: {`${key} ${mode}`}</ThemedText>
@@ -249,5 +291,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     height: 200,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-evenly",
+    alignItems: "center",
   },
 });
