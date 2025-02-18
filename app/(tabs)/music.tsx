@@ -1,11 +1,13 @@
 import { WebView } from "react-native-webview";
-import { Button, Image, StyleSheet, View } from "react-native";
+import { Image, StyleSheet } from "react-native";
 
 import { ThemedText } from "@/components/ThemedText";
 
 import { Key, Note, Scale } from "tonal";
 import { useState } from "react";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
+import { Picker } from "@react-native-picker/picker";
+
 
 interface MeasureNote {
   pitch: {
@@ -196,7 +198,7 @@ export default function MusicScreen() {
 <!doctype html>
 <html>
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=0.75" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="https://unpkg.com/opensheetmusicdisplay@0.8.3/build/opensheetmusicdisplay.min.js"></script>
     <style>
       body {
@@ -261,21 +263,21 @@ export default function MusicScreen() {
       }>
       <ThemedText type="title">Music Notation</ThemedText>
 
-      <View style={styles.row}>
+      <Picker
+        selectedValue={key}
+        onValueChange={(itemValue, _itemIndex) => setKey(itemValue)}>
         {availableKeys.map((key) => (
-          <Button key={key} onPress={() => setKey(key)} title={key} />
+          <Picker.Item key={key} label={key} value={key} />
         ))}
-      </View>
+      </Picker>
 
-      <View style={styles.row}>
+      <Picker
+        selectedValue={mode}
+        onValueChange={(itemValue, _itemIndex) => setMode(itemValue)}>
         {availableModes.map((mode) => (
-          <Button
-            key={mode.label}
-            onPress={() => setMode(mode.value)}
-            title={mode.label}
-          />
+          <Picker.Item key={mode.value} label={mode.label} value={mode.value} />
         ))}
-      </View>
+      </Picker>
 
       <ThemedText>Scale: {`${key} ${mode}`}</ThemedText>
       <WebView
