@@ -1,12 +1,18 @@
 import { WebView } from "react-native-webview";
-import { Image, StyleSheet, View } from "react-native";
+import {
+  ScrollView,
+  StyleProp,
+  StyleSheet,
+  View,
+  ViewStyle,
+} from "react-native";
 
 import { ThemedText } from "@/components/ThemedText";
 
 import { Key, Note, Scale } from "tonal";
 import { useState } from "react";
-import ParallaxScrollView from "@/components/ParallaxScrollView";
-import { Picker } from "@react-native-picker/picker";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { Dropdown } from "react-native-element-dropdown";
 
 // Divisions per quarter note
 const divisionCount = 4;
@@ -241,10 +247,41 @@ function generateMusicXMLForScale(opts: {
   return xml;
 }
 
+const CustomDropdown = <T,>(props: {
+  data: { label: string; value: T }[];
+  onChange: (arg: { label: string; value: T }) => void;
+  value: string;
+  style?: StyleProp<ViewStyle>;
+}) => {
+  const [isFocus, setIsFocus] = useState(false);
+
+  return (
+    <Dropdown
+      style={[styles.dropdown, props.style, isFocus && { borderColor: "blue" }]}
+      placeholderStyle={styles.placeholderStyle}
+      selectedTextStyle={styles.selectedTextStyle}
+      iconStyle={styles.iconStyle}
+      data={props.data}
+      maxHeight={300}
+      labelField="label"
+      valueField="value"
+      placeholder={!isFocus ? "Select item" : "..."}
+      searchPlaceholder="Search..."
+      value={props.value}
+      onFocus={() => setIsFocus(true)}
+      onBlur={() => setIsFocus(false)}
+      onChange={(item) => {
+        props.onChange({ label: item.label, value: item.value });
+        setIsFocus(false);
+      }}
+    />
+  );
+};
+
 export default function MusicScreen() {
   const [key, setKey] = useState<string>("C");
   const [mode, setMode] = useState<Mode>("major");
-  const [rhythm, setRhythm] = useState<Rhythm>("quarter");
+  const [rhythm, setRhythm] = useState<Rhythm>("eighth");
 
   const xml = generateMusicXMLForScale({
     key,
@@ -286,19 +323,19 @@ export default function MusicScreen() {
 </html>
   `;
 
-  const availableKeys = [
-    "C",
-    "Db",
-    "D",
-    "Eb",
-    "E",
-    "F",
-    "Gb",
-    "G",
-    "Ab",
-    "A",
-    "Bb",
-    "B",
+  const availableKeys: { label: string; value: string }[] = [
+    { label: "C", value: "C" },
+    { label: "Db", value: "Db" },
+    { label: "D", value: "D" },
+    { label: "Eb", value: "Eb" },
+    { label: "E", value: "E" },
+    { label: "F", value: "F" },
+    { label: "Gb", value: "Gb" },
+    { label: "G", value: "G" },
+    { label: "Ab", value: "Ab" },
+    { label: "A", value: "A" },
+    { label: "Bb", value: "Bb" },
+    { label: "B", value: "B" },
   ];
 
   const availableModes: {
@@ -318,56 +355,49 @@ export default function MusicScreen() {
   ];
 
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
-      headerImage={
-        <Image
-          source={require("@/assets/images/partial-react-logo.png")}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedText type="title">Music Notation Demo</ThemedText>
+    <SafeAreaProvider>
+      <SafeAreaView>
+        <ScrollView>
+          <ThemedText type="title" style={styles.title}>
+            Tonal Flow
+          </ThemedText>
 
-      <Picker
-        selectedValue={key}
-        onValueChange={(itemValue, _itemIndex) => setKey(itemValue)}>
-        {availableKeys.map((key) => (
-          <Picker.Item key={key} label={key} value={key} />
-        ))}
-      </Picker>
+          <View style={styles.optionsContainer}>
+            <CustomDropdown
+              data={availableKeys}
+              onChange={(item) => setKey(item.value)}
+              value={key}
+              style={styles.option}
+            />
 
-      <Picker
-        selectedValue={mode}
-        onValueChange={(itemValue, _itemIndex) => setMode(itemValue)}>
-        {availableModes.map(({ value, label }) => (
-          <Picker.Item key={value} label={label} value={value} />
-        ))}
-      </Picker>
+            <CustomDropdown
+              data={availableModes}
+              onChange={(item) => setMode(item.value)}
+              value={mode}
+              style={styles.option}
+            />
 
-      <Picker
-        selectedValue={rhythm}
-        onValueChange={(itemValue, _itemIndex) => setRhythm(itemValue)}>
-        {availableRhythms.map(({ value, label }) => (
-          <Picker.Item key={value} label={label} value={value} />
-        ))}
-      </Picker>
+            <CustomDropdown
+              data={availableRhythms}
+              onChange={(item) => setRhythm(item.value)}
+              value={rhythm}
+              style={styles.option}
+            />
+          </View>
 
-      <ThemedText>Scale: {`${key} ${mode}`}</ThemedText>
-      <WebView
-        style={styles.container}
-        originWhitelist={["*"]}
-        source={{ html: htmlContent }}></WebView>
-    </ParallaxScrollView>
+          <WebView
+            style={styles.container}
+            originWhitelist={["*"]}
+            source={{ html: htmlContent }}></WebView>
+        </ScrollView>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: "absolute",
+  title: {
+    marginTop: 32,
   },
   container: {
     flex: 1,
@@ -375,5 +405,50 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
+  },
+
+  optionsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 16,
+    marginTop: 32,
+  },
+
+  option: {
+    flex: 1,
+  },
+
+  dropdown: {
+    height: 50,
+    borderColor: "gray",
+    borderWidth: 0.5,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+  },
+  icon: {
+    marginRight: 5,
+  },
+  label: {
+    position: "absolute",
+    backgroundColor: "white",
+    left: 22,
+    top: 8,
+    zIndex: 999,
+    paddingHorizontal: 8,
+    fontSize: 14,
+  },
+  placeholderStyle: {
+    fontSize: 16,
+  },
+  selectedTextStyle: {
+    fontSize: 16,
+  },
+  iconStyle: {
+    width: 20,
+    height: 20,
+  },
+  inputSearchStyle: {
+    height: 40,
+    fontSize: 16,
   },
 });
