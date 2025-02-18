@@ -8,6 +8,8 @@ import { useState } from "react";
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { Picker } from "@react-native-picker/picker";
 
+// Divisions per quarter note
+const divisionCount = 4;
 
 interface MeasureNote {
   pitch: {
@@ -16,8 +18,20 @@ interface MeasureNote {
     octave: number;
   };
 
-  // Duration of the note in beats. Currently assumes 4/4.
-  duration: 1 | 2 | 4;
+  /**
+   * Duration of the note in beats. Relative to the divisions, which represents
+   * the division of a quarter note.
+   */
+  duration: 1 | 2 | 4 | 8 | 16;
+
+  beam?: {
+    /**
+     * Indicates eighth note through 1024th note beams using number values 1
+     * thru 8 respectively. The default value is 1.
+     */
+    beamLevel?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+    value: "begin" | "continue" | "end";
+  };
 }
 
 interface MeasureAttributes {
@@ -42,24 +56,35 @@ interface Measure {
 
 type Mode = "major" | "minor" | "harmonic minor" | "melodic minor";
 
+type Rhythm = "quarter" | "eighth" | "sixteenth";
+
 function generateMusicXMLForScale(opts: {
   key: string;
   mode: Mode;
+  rhythm: Rhythm;
   octaves: number;
 }) {
   const note = (note: MeasureNote) => {
     const type = (() => {
       if (note.duration === 1) {
-        return "quarter";
+        return "16th";
       } else if (note.duration === 2) {
-        return "half";
+        return "eighth";
       } else if (note.duration === 4) {
+        return "quarter";
+      } else if (note.duration === 8) {
+        return "half";
+      } else if (note.duration === 16) {
         return "whole";
       } else {
         const _never: never = note.duration;
         throw new Error(`Unexpected duration: ${_never}`);
       }
     })();
+
+    const beam = note.beam
+      ? `<beam number="${note.beam.beamLevel ?? 1}">${note.beam.value}</beam>`
+      : "";
 
     return `
       <note>
@@ -70,6 +95,7 @@ function generateMusicXMLForScale(opts: {
         </pitch>
         <duration>${note.duration}</duration>
         <type>${type}</type>
+        ${beam}
       </note>
     `;
   };
@@ -77,6 +103,7 @@ function generateMusicXMLForScale(opts: {
   const attributes = (attributes: MeasureAttributes) => {
     return `
       <attributes>
+        <divisions>${divisionCount}</divisions>
         ${attributes.key?.fifths ? `<key><fifths>${attributes.key.fifths}</fifths></key>` : ""}
         <time>
           <beats>${attributes.time?.beats}</beats>
@@ -115,23 +142,53 @@ function generateMusicXMLForScale(opts: {
 
   const measures = [];
   let currentMeasure: Measure = { notes: [] };
+  let timeAccumulator = 0;
+  let startBeam = true;
 
   for (let i = 0; i < notes.length; i++) {
     const currentNote = notes[i];
+    const duration = (() => {
+      if (opts.rhythm === "quarter") {
+        return 4;
+      } else if (opts.rhythm === "eighth") {
+        return 2;
+      } else if (opts.rhythm === "sixteenth") {
+        return 1;
+      } else {
+        const _never: never = opts.rhythm;
+        throw new Error(`Unexpected rhythm: ${_never}`);
+      }
+    })();
 
-    currentMeasure.notes.push({
+    const newNote = {
       pitch: {
         step: currentNote.letter,
         alter:
           currentNote.alt === 1 ? 1 : currentNote.alt === -1 ? -1 : undefined,
         octave: currentNote.oct ?? 4,
       },
-      duration: 1,
-    });
+      duration,
+      beam: {
+        value: startBeam ? "begin" : "continue",
+      },
+    } as const;
 
-    if (i % 4 === 3) {
+    currentMeasure.notes.push(newNote);
+
+    timeAccumulator += duration;
+
+    if (!(timeAccumulator % 4)) {
+      const lastNote = currentMeasure.notes.at(-1);
+      if (lastNote && lastNote.beam) {
+        lastNote.beam.value = "end";
+      }
+      startBeam = true;
+    }
+
+    if (timeAccumulator >= divisionCount * 4) {
       measures.push(currentMeasure);
       currentMeasure = { notes: [] };
+      timeAccumulator = 0;
     }
   }
 
@@ -187,10 +244,12 @@ function generateMusicXMLForScale(opts: {
 export default function MusicScreen() {
   const [key, setKey] = useState<string>("C");
   const [mode, setMode] = useState<Mode>("major");
+  const [rhythm, setRhythm] = useState<Rhythm>("quarter");
 
   const xml = generateMusicXMLForScale({
     key,
     mode,
+    rhythm,
     octaves: 2,
   });
 
@@ -252,6 +311,12 @@ export default function MusicScreen() {
     { label: "Melodic Minor", value: "melodic minor" },
   ];
 
+  const availableRhythms: { label: string; value: Rhythm }[] = [
+    { label: "Quarters", value: "quarter" },
+    { label: "Eighths", value: "eighth" },
+    { label: "Sixteenths", value: "sixteenth" },
+  ];
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
@@ -274,8 +339,16 @@ export default function MusicScreen() {
       <Picker
         selectedValue={mode}
         onValueChange={(itemValue, _itemIndex) => setMode(itemValue)}>
-        {availableModes.map((mode) => (
-          <Picker.Item key={mode.value} label={mode.label} value={mode.value} />
+        {availableModes.map(({ value, label }) => (
+          <Picker.Item key={value} label={label} value={value} />
+        ))}
+      </Picker>
+
+      <Picker
+        selectedValue={rhythm}
+        onValueChange={(itemValue, _itemIndex) => setRhythm(itemValue)}>
+        {availableRhythms.map(({ value, label }) => (
+          <Picker.Item key={value} label={label} value={value} />
         ))}
       </Picker>
 
