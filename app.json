@@ -3,7 +3,7 @@
     "name": "tonal-flow",
     "slug": "tonal-flow",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "landscape",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
