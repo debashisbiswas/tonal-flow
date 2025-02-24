@@ -1,7 +1,7 @@
 import { getNotesForScale } from "../Scales";
 
 it(`gets notes for C major scale`, () => {
-  const notes = getNotesForScale("C", "major", 4, 1);
+  const notes = getNotesForScale("C", "major", 4, 1).map((note) => note.name);
 
   expect(notes).toEqual([
     "C4",
@@ -23,7 +23,7 @@ it(`gets notes for C major scale`, () => {
 });
 
 it(`gets multiple octaves`, () => {
-  const notes = getNotesForScale("A", "minor", 4, 2);
+  const notes = getNotesForScale("A", "minor", 4, 2).map((note) => note.name);
 
   expect(notes).toEqual([
     "A4",
@@ -59,7 +59,9 @@ it(`gets multiple octaves`, () => {
 });
 
 it(`correctly spells melodic minor`, () => {
-  const notes = getNotesForScale("C", "melodic minor", 4, 1);
+  const notes = getNotesForScale("C", "melodic minor", 4, 1).map(
+    (note) => note.name,
+  );
 
   expect(notes).toEqual([
     "C4",

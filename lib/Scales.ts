@@ -26,7 +26,10 @@ export const getNotesForScale = (
       ? Scale.rangeOf(`${key} minor`)(endNote, startNote).slice(1)
       : ascendingNotes.toReversed().slice(1);
 
-  return ascendingNotes.concat(descendingNotes).filter((note) => note != null);
+  return ascendingNotes
+    .concat(descendingNotes)
+    .filter((note) => note != null)
+    .map(Note.get);
 };
 
 export interface MeasureNote {
@@ -149,8 +152,7 @@ export function generateMusicXMLForScale(opts: {
     `;
   };
 
-  const scaleNotes = getNotesForScale(opts.key, opts.mode, 3, 2);
-  const notes = scaleNotes.map((note) => Note.get(note));
+  const notes = getNotesForScale(opts.key, opts.mode, 3, 3);
 
   const measures = [];
   let currentMeasure: Measure = { notes: [] };
