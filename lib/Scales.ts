@@ -3,6 +3,32 @@ import { Key, Note, Scale } from "tonal";
 // Divisions per quarter note
 const divisionCount = 4;
 
+export type Mode = "major" | "minor" | "harmonic minor" | "melodic minor";
+
+export type Rhythm = "quarter" | "eighth" | "sixteenth";
+
+export const getNotesForScale = (
+  key: string,
+  mode: Mode,
+  startOctave: number,
+  octaves: number,
+) => {
+  const fullName = `${key} ${mode}`;
+  const range = Scale.rangeOf(fullName);
+
+  const startNote = `${key}${startOctave}`;
+  const endNote = `${key}${startOctave + octaves}`;
+
+  // Ascending notes include the octave, so remove it when descending.
+  const ascendingNotes = range(startNote, endNote);
+  const descendingNotes =
+    mode === "melodic minor"
+      ? Scale.rangeOf(`${key} minor`)(endNote, startNote).slice(1)
+      : ascendingNotes.toReversed().slice(1);
+
+  return ascendingNotes.concat(descendingNotes).filter((note) => note != null);
+};
+
 export interface MeasureNote {
   pitch: {
     step: string;
@@ -45,10 +71,6 @@ export interface Measure {
   notes: MeasureNote[];
   doubleBar?: boolean;
 }
-
-export type Mode = "major" | "minor" | "harmonic minor" | "melodic minor";
-
-export type Rhythm = "quarter" | "eighth" | "sixteenth";
 
 export function generateMusicXMLForScale(opts: {
   key: string;
@@ -127,10 +149,8 @@ export function generateMusicXMLForScale(opts: {
     `;
   };
 
-  const scaleDegrees = [0, 1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1, 0, 0];
-  const scaleName = `${opts.key}4 ${opts.mode}`;
-  const names = scaleDegrees.map(Scale.steps(scaleName));
-  const notes = names.map((note) => Note.get(note));
+  const scaleNotes = getNotesForScale(opts.key, opts.mode, 3, 2);
+  const notes = scaleNotes.map((note) => Note.get(note));
 
   const measures = [];
   let currentMeasure: Measure = { notes: [] };
@@ -145,7 +165,11 @@ export function generateMusicXMLForScale(opts: {
       } else if (opts.rhythm === "eighth") {
         return 2;
       } else if (opts.rhythm === "sixteenth") {
-        return 1;
+        if (i % 7 === 0) {
+          return 2;
+        } else {
+          return 1;
+        }
       } else {
         const _never: never = opts.rhythm;
         throw new Error(`Unexpected rhythm: ${_never}`);
@@ -231,10 +255,4 @@ export function generateMusicXMLForScale(opts: {
   `;
 
   return xml;
-}
-
-export interface MyScale {
-  name: string;
-  alteration?: "b" | "#";
-  mode: Mode;
 }
