@@ -12,7 +12,12 @@ import { ThemedText } from "@/components/ThemedText";
 import { useState } from "react";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { Dropdown } from "react-native-element-dropdown";
-import { generateMusicXMLForScale, Mode, Rhythm } from "@/lib/Scales";
+import {
+  generateMusicXMLForScale,
+  Mode,
+  Rhythm,
+  RhythmPattern,
+} from "@/lib/Scales";
 
 const CustomDropdown = <T,>(props: {
   data: { label: string; value: T }[];
@@ -48,7 +53,7 @@ const CustomDropdown = <T,>(props: {
 export default function MusicScreen() {
   const [key, setKey] = useState<string>("C");
   const [mode, setMode] = useState<Mode>("major");
-  const [rhythm, setRhythm] = useState<Rhythm>("eighth");
+  const [rhythm, setRhythm] = useState<RhythmPattern>("long octave");
 
   const xml = generateMusicXMLForScale({
     key,
@@ -116,10 +121,10 @@ export default function MusicScreen() {
     { label: "Melodic Minor", value: "melodic minor" },
   ];
 
-  const availableRhythms: { label: string; value: Rhythm }[] = [
-    { label: "Quarters", value: "quarter" },
-    { label: "Eighths", value: "eighth" },
-    { label: "Sixteenths", value: "sixteenth" },
+  const availableRhythms: { label: string; value: RhythmPattern }[] = [
+    { label: "Long Octave", value: "long octave" },
+    { label: "Sixteenths", value: "sixteenths" },
+    { label: "Eighth, Two Sixteenths", value: "eighth two sixteenths" },
   ];
 
   return (

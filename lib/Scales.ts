@@ -1,7 +1,13 @@
 import { Key, Note, Scale } from "tonal";
 
-// Divisions per quarter note
-const divisionCount = 4;
+const quarterNoteDivision = 4;
+const divisions = {
+  "16th": quarterNoteDivision / 4,
+  eighth: quarterNoteDivision / 2,
+  quarter: quarterNoteDivision,
+  half: quarterNoteDivision * 2,
+  whole: quarterNoteDivision * 4,
+} as const;
 
 export type Mode = "major" | "minor" | "harmonic minor" | "melodic minor";
 
@@ -32,6 +38,45 @@ export const getNotesForScale = (
     .map(Note.get);
 };
 
+export type RhythmPattern =
+  | "long octave"
+  | "sixteenths"
+  | "eighth two sixteenths";
+
+export const applyRhythmPattern = (
+  notes: ReturnType<typeof Note.get>[],
+  pattern: RhythmPattern,
+) => {
+  const result = [];
+
+  for (const [i, note] of notes.entries()) {
+    const duration = (() => {
+      if (pattern === "long octave") {
+        if (i % 7 === 0) {
+          return divisions.eighth;
+        } else {
+          return divisions["16th"];
+        }
+      } else if (pattern === "sixteenths") {
+        return divisions["16th"];
+      } else if (pattern === "eighth two sixteenths") {
+        if (i % 3 === 0) {
+          return divisions.eighth;
+        } else {
+          return divisions["16th"];
+        }
+      } else {
+        const _never: never = pattern;
+        throw new Error(`Unexpected rhythm pattern: ${_never}`);
+      }
+    })();
+
+    result.push({ note, duration });
+  }
+
+  return result;
+};
+
 export interface MeasureNote {
   pitch: {
     step: string;
@@ -43,7 +88,7 @@ export interface MeasureNote {
    * Duration of the note in beats. Relative to the divisions, which represents
    * the division of a quarter note.
    */
-  duration: 1 | 2 | 4 | 8 | 16;
+  duration: number;
 }
 
 export interface MeasureAttributes {
@@ -69,7 +114,7 @@ export interface Measure {
 export function generateMusicXMLForScale(opts: {
   key: string;
   mode: Mode;
-  rhythm: Rhythm;
+  rhythm: RhythmPattern;
   octaves: number;
 }) {
   const note = (note: MeasureNote) => {
@@ -84,10 +129,9 @@ export function generateMusicXMLForScale(opts: {
         return "half";
       } else if (note.duration === 16) {
         return "whole";
-      } else {
-        const _never: never = note.duration;
-        throw new Error(`Unexpected duration: ${_never}`);
       }
+
+      return "quarter";
     })();
 
     return `
@@ -106,7 +150,7 @@ export function generateMusicXMLForScale(opts: {
   const attributes = (attributes: MeasureAttributes) => {
     return `
       <attributes>
-        <divisions>${divisionCount}</divisions>
+        <divisions>${quarterNoteDivision}</divisions>
         ${attributes.key?.fifths ? `<key><fifths>${attributes.key.fifths}</fifths></key>` : ""}
         <time>
           <beats>${attributes.time?.beats}</beats>
@@ -139,45 +183,32 @@ export function generateMusicXMLForScale(opts: {
   };
 
   const notes = getNotesForScale(opts.key, opts.mode, 3, 3);
+  const notesWithRhythm = applyRhythmPattern(notes, opts.rhythm);
 
   const measures = [];
   let currentMeasure: Measure = { notes: [] };
   let timeAccumulator = 0;
 
-  for (let i = 0; i < notes.length; i++) {
-    const currentNote = notes[i];
-    const duration = (() => {
-      if (opts.rhythm === "quarter") {
-        return 4;
-      } else if (opts.rhythm === "eighth") {
-        return 2;
-      } else if (opts.rhythm === "sixteenth") {
-        if (i % 7 === 0) {
-          return 2;
-        } else {
-          return 1;
-        }
-      } else {
-        const _never: never = opts.rhythm;
-        throw new Error(`Unexpected rhythm: ${_never}`);
-      }
-    })();
-
+  for (const currentNote of notesWithRhythm) {
     const newNote = {
       pitch: {
-        step: currentNote.letter,
+        step: currentNote.note.letter,
         alter:
-          currentNote.alt === 1 ? 1 : currentNote.alt === -1 ? -1 : undefined,
-        octave: currentNote.oct ?? 4,
+          currentNote.note.alt === 1
+            ? 1
+            : currentNote.note.alt === -1
+              ? -1
+              : undefined,
+        octave: currentNote.note.oct ?? 4,
       },
-      duration,
+      duration: currentNote.duration,
     } as const;
 
     currentMeasure.notes.push(newNote);
 
-    timeAccumulator += duration;
+    timeAccumulator += currentNote.duration;
 
-    if (timeAccumulator >= divisionCount * 4) {
+    if (timeAccumulator >= quarterNoteDivision * 4) {
       measures.push(currentMeasure);
       currentMeasure = { notes: [] };
       timeAccumulator = 0;
