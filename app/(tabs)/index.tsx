@@ -79,6 +79,7 @@ export default function MusicScreen() {
           autoResize: true,
           backend: "svg",
           drawingParameters: "compacttight",
+          autoBeam: true,
         },
       );
 

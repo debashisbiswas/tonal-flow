@@ -44,15 +44,6 @@ export interface MeasureNote {
    * the division of a quarter note.
    */
   duration: 1 | 2 | 4 | 8 | 16;
-
-  beam?: {
-    /**
-     * Indicates eighth note through 1024th note beams using number values 1
-     * thru 8 respectively. The default value is 1.
-     */
-    beamLevel?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
-    value: "begin" | "continue" | "end";
-  };
 }
 
 export interface MeasureAttributes {
@@ -99,10 +90,6 @@ export function generateMusicXMLForScale(opts: {
       }
     })();
 
-    const beam = note.beam
-      ? `<beam number="${note.beam.beamLevel ?? 1}">${note.beam.value}</beam>`
-      : "";
-
     return `
       <note>
         <pitch>
@@ -112,7 +99,6 @@ export function generateMusicXMLForScale(opts: {
         </pitch>
         <duration>${note.duration}</duration>
         <type>${type}</type>
-        ${beam}
       </note>
     `;
   };
@@ -157,7 +143,6 @@ export function generateMusicXMLForScale(opts: {
   const measures = [];
   let currentMeasure: Measure = { notes: [] };
   let timeAccumulator = 0;
-  let startBeam = true;
 
   for (let i = 0; i < notes.length; i++) {
     const currentNote = notes[i];
@@ -186,22 +171,11 @@ export function generateMusicXMLForScale(opts: {
         octave: currentNote.oct ?? 4,
       },
       duration,
-      beam: {
-        value: startBeam ? "begin" : "continue",
-      },
     } as const;
 
     currentMeasure.notes.push(newNote);
 
     timeAccumulator += duration;
-
-    if (!(timeAccumulator % 4)) {
-      const lastNote = currentMeasure.notes.at(-1);
-      if (lastNote && lastNote.beam) {
-        lastNote.beam.value = "end";
-      }
-      startBeam = true;
-    }
 
     if (timeAccumulator >= divisionCount * 4) {
       measures.push(currentMeasure);
