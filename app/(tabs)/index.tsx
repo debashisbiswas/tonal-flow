@@ -12,12 +12,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { useState } from "react";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { Dropdown } from "react-native-element-dropdown";
-import {
-  generateMusicXMLForScale,
-  Mode,
-  Rhythm,
-  RhythmPattern,
-} from "@/lib/Scales";
+import { generateMusicXMLForScale, Mode, RhythmPattern } from "@/lib/Scales";
 
 const CustomDropdown = <T,>(props: {
   data: { label: string; value: T }[];
@@ -59,7 +54,7 @@ export default function MusicScreen() {
     key,
     mode,
     rhythm,
-    octaves: 2,
+    octaves: 1,
   });
 
   const htmlContent = `

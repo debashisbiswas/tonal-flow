@@ -58,6 +58,32 @@ it(`gets multiple octaves`, () => {
   ]);
 });
 
+it(`correctly overshoots the octave`, () => {
+  const notes = getNotesForScale("C", "major", 4, 1, true).map(
+    (note) => note.name,
+  );
+
+  expect(notes).toEqual([
+    "C4",
+    "D4",
+    "E4",
+    "F4",
+    "G4",
+    "A4",
+    "B4",
+    "C5",
+    "D5",
+    "C5",
+    "B4",
+    "A4",
+    "G4",
+    "F4",
+    "E4",
+    "D4",
+    "C4",
+  ]);
+});
+
 it(`correctly spells melodic minor`, () => {
   const notes = getNotesForScale("C", "melodic minor", 4, 1).map(
     (note) => note.name,

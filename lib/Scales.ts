@@ -1,4 +1,4 @@
-import { Key, Note, Scale } from "tonal";
+import { Key, Note, Scale, Range } from "tonal";
 
 const quarterNoteDivision = 4;
 const divisions = {
@@ -18,18 +18,21 @@ export const getNotesForScale = (
   mode: Mode,
   startOctave: number,
   octaves: number,
+  overshootOctave = false,
 ) => {
-  const fullName = `${key} ${mode}`;
-  const range = Scale.rangeOf(fullName);
+  const fullName = `${key}${startOctave} ${mode}`;
+  const scaleSteps = Scale.steps(fullName);
 
-  const startNote = `${key}${startOctave}`;
-  const endNote = `${key}${startOctave + octaves}`;
+  const startNote = 0;
+  const endNote = 7 * octaves + (overshootOctave ? octaves : 0);
 
   // Ascending notes include the octave, so remove it when descending.
-  const ascendingNotes = range(startNote, endNote);
+  const ascendingNotes = Range.numeric([startNote, endNote]).map(scaleSteps);
   const descendingNotes =
     mode === "melodic minor"
-      ? Scale.rangeOf(`${key} minor`)(endNote, startNote).slice(1)
+      ? Range.numeric([endNote, startNote])
+          .map(Scale.steps(`${key}${startOctave} minor`))
+          .slice(1)
       : ascendingNotes.toReversed().slice(1);
 
   return ascendingNotes
@@ -182,12 +185,21 @@ export function generateMusicXMLForScale(opts: {
     `;
   };
 
-  const notes = getNotesForScale(opts.key, opts.mode, 3, 3);
+  const notes = getNotesForScale(
+    opts.key,
+    opts.mode,
+    4,
+    opts.octaves,
+    opts.rhythm === "sixteenths" || opts.rhythm === "eighth two sixteenths",
+  );
   const notesWithRhythm = applyRhythmPattern(notes, opts.rhythm);
 
-  const measures = [];
+  const measures: Measure[] = [];
   let currentMeasure: Measure = { notes: [] };
   let timeAccumulator = 0;
+
+  const timeSignatureNumeralTop = opts.rhythm === "eighth two sixteenths" ? 6 : 4;
+  const timeSignatureNumeralBottom = 4;
 
   for (const currentNote of notesWithRhythm) {
     const newNote = {
@@ -208,7 +220,7 @@ export function generateMusicXMLForScale(opts: {
 
     timeAccumulator += currentNote.duration;
 
-    if (timeAccumulator >= quarterNoteDivision * 4) {
+    if (timeAccumulator >= quarterNoteDivision * timeSignatureNumeralTop) {
       measures.push(currentMeasure);
       currentMeasure = { notes: [] };
       timeAccumulator = 0;
@@ -216,6 +228,11 @@ export function generateMusicXMLForScale(opts: {
   }
 
   if (currentMeasure.notes.length > 0) {
+    if (currentMeasure.notes.length === 1) {
+      // Extend the last note
+      const lastNote = currentMeasure.notes[0];
+      lastNote.duration = divisions.whole;
+    }
     measures.push(currentMeasure);
   }
 
@@ -237,7 +254,7 @@ export function generateMusicXMLForScale(opts: {
 
     measures[0].attributes = {
       key: { fifths: key.alteration },
-      time: { beats: 4, beatType: 4 },
+      time: { beats: timeSignatureNumeralTop, beatType: timeSignatureNumeralBottom },
       clef: { sign: "G", line: 2 },
     };
 
