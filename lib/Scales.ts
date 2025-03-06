@@ -1,12 +1,12 @@
 import { Key, Note, Scale, Range } from "tonal";
 
-const quarterNoteDivision = 4;
+const _quarterNoteDivision = 4;
 const divisions = {
-  "16th": quarterNoteDivision / 4,
-  eighth: quarterNoteDivision / 2,
-  quarter: quarterNoteDivision,
-  half: quarterNoteDivision * 2,
-  whole: quarterNoteDivision * 4,
+  "16th": _quarterNoteDivision / 4,
+  eighth: _quarterNoteDivision / 2,
+  quarter: _quarterNoteDivision,
+  half: _quarterNoteDivision * 2,
+  whole: _quarterNoteDivision * 4,
 } as const;
 
 export type Mode = "major" | "minor" | "harmonic minor" | "melodic minor";
@@ -153,7 +153,7 @@ export function generateMusicXMLForScale(opts: {
   const attributes = (attributes: MeasureAttributes) => {
     return `
       <attributes>
-        <divisions>${quarterNoteDivision}</divisions>
+        <divisions>${divisions.quarter}</divisions>
         ${attributes.key?.fifths ? `<key><fifths>${attributes.key.fifths}</fifths></key>` : ""}
         <time>
           <beats>${attributes.time?.beats}</beats>
@@ -220,7 +220,7 @@ export function generateMusicXMLForScale(opts: {
 
     timeAccumulator += currentNote.duration;
 
-    if (timeAccumulator >= quarterNoteDivision * timeSignatureNumeralTop) {
+    if (timeAccumulator >= divisions.quarter * timeSignatureNumeralTop) {
       measures.push(currentMeasure);
       currentMeasure = { notes: [] };
       timeAccumulator = 0;
