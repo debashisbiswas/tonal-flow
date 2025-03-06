@@ -17,7 +17,7 @@ import { generateMusicXMLForScale, Mode, RhythmPattern } from "@/lib/Scales";
 const CustomDropdown = <T,>(props: {
   data: { label: string; value: T }[];
   onChange: (arg: { label: string; value: T }) => void;
-  value: string;
+  value: T;
   style?: StyleProp<ViewStyle>;
 }) => {
   const [isFocus, setIsFocus] = useState(false);
@@ -49,12 +49,13 @@ export default function MusicScreen() {
   const [key, setKey] = useState<string>("C");
   const [mode, setMode] = useState<Mode>("major");
   const [rhythm, setRhythm] = useState<RhythmPattern>("long octave");
+  const [octaves, setOctaves] = useState(1);
 
   const xml = generateMusicXMLForScale({
     key,
     mode,
     rhythm,
-    octaves: 1,
+    octaves,
   });
 
   const htmlContent = `
@@ -122,6 +123,12 @@ export default function MusicScreen() {
     { label: "Eighth, Two Sixteenths", value: "eighth two sixteenths" },
   ];
 
+  const availableOctaves = [
+    { label: "1", value: 1 },
+    { label: "2", value: 2 },
+    { label: "3", value: 3 },
+  ];
+
   return (
     <SafeAreaProvider>
       <SafeAreaView>
@@ -149,6 +156,13 @@ export default function MusicScreen() {
               data={availableRhythms}
               onChange={(item) => setRhythm(item.value)}
               value={rhythm}
+              style={styles.option}
+            />
+
+            <CustomDropdown
+              data={availableOctaves}
+              onChange={(item) => setOctaves(item.value)}
+              value={octaves}
               style={styles.option}
             />
           </View>
