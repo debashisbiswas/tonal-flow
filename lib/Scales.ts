@@ -24,7 +24,7 @@ export const getNotesForScale = (
   const scaleSteps = Scale.steps(fullName);
 
   const startNote = 0;
-  const endNote = 7 * octaves + (overshootOctave ? octaves : 0);
+  const endNote = 7 * octaves + (overshootOctave ? 1 : 0);
 
   // Ascending notes include the octave, so remove it when descending.
   const ascendingNotes = Range.numeric([startNote, endNote]).map(scaleSteps);
@@ -185,6 +185,10 @@ export function generateMusicXMLForScale(opts: {
     `;
   };
 
+  const getMeasureDuration = (measure: Measure) => {
+    return measure.notes.reduce((acc, note) => acc + note.duration, 0);
+  };
+
   const notes = getNotesForScale(
     opts.key,
     opts.mode,
@@ -198,19 +202,21 @@ export function generateMusicXMLForScale(opts: {
   let currentMeasure: Measure = { notes: [] };
   let timeAccumulator = 0;
 
-  const timeSignatureNumeralTop = opts.rhythm === "eighth two sixteenths" ? 6 : 4;
+  const timeSignatureNumeralTop =
+    opts.rhythm === "eighth two sixteenths" ? 6 : 4;
   const timeSignatureNumeralBottom = 4;
+
+  const measureDuration = divisions.quarter * timeSignatureNumeralTop;
 
   for (const currentNote of notesWithRhythm) {
     const newNote = {
       pitch: {
         step: currentNote.note.letter,
-        alter:
-          currentNote.note.alt === 1
-            ? 1
-            : currentNote.note.alt === -1
-              ? -1
-              : undefined,
+        alter: currentNote.note.alt
+          ? 1
+          : currentNote.note.alt === -1
+            ? -1
+            : undefined,
         octave: currentNote.note.oct ?? 4,
       },
       duration: currentNote.duration,
@@ -220,20 +226,41 @@ export function generateMusicXMLForScale(opts: {
 
     timeAccumulator += currentNote.duration;
 
-    if (timeAccumulator >= divisions.quarter * timeSignatureNumeralTop) {
+    if (timeAccumulator >= measureDuration) {
       measures.push(currentMeasure);
       currentMeasure = { notes: [] };
       timeAccumulator = 0;
     }
   }
 
+  console.log("==========");
+  console.log(JSON.stringify(currentMeasure, null, 2));
+
   if (currentMeasure.notes.length > 0) {
+    // if the last note is longer than the (worst case: eighth) we would have landed on...
+    if (currentMeasure.notes.length > 2) {
+      const tonic = currentMeasure.notes[currentMeasure.notes.length - 1];
+
+      // pad out the last measure
+      while (getMeasureDuration(currentMeasure) < measureDuration) {
+        currentMeasure.notes.push({
+          ...tonic,
+          duration: divisions["16th"],
+        });
+      }
+
+      measures.push(currentMeasure);
+      // land on whole note tonic
+      // TODO handle 6/4
+      measures.push({ notes: [{ ...tonic, duration: divisions.whole }] });
+    }
+
     if (currentMeasure.notes.length === 1) {
       // Extend the last note
       const lastNote = currentMeasure.notes[0];
       lastNote.duration = divisions.whole;
+      measures.push(currentMeasure);
     }
-    measures.push(currentMeasure);
   }
 
   if (measures.length > 0) {
@@ -254,7 +281,10 @@ export function generateMusicXMLForScale(opts: {
 
     measures[0].attributes = {
       key: { fifths: key.alteration },
-      time: { beats: timeSignatureNumeralTop, beatType: timeSignatureNumeralBottom },
+      time: {
+        beats: timeSignatureNumeralTop,
+        beatType: timeSignatureNumeralBottom,
+      },
       clef: { sign: "G", line: 2 },
     };
 
