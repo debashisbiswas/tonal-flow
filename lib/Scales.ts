@@ -1,17 +1,17 @@
 import { Key, Note, Scale, Range } from "tonal";
-
-const _quarterNoteDivision = 4;
-const divisions = {
-  "16th": _quarterNoteDivision / 4,
-  eighth: _quarterNoteDivision / 2,
-  quarter: _quarterNoteDivision,
-  half: _quarterNoteDivision * 2,
-  whole: _quarterNoteDivision * 4,
-} as const;
+import { MusicXML } from "./musicxml";
 
 export type Mode = "major" | "minor" | "harmonic minor" | "melodic minor";
-
 export type Rhythm = "quarter" | "eighth" | "sixteenth";
+export type RhythmPattern =
+  | "long octave"
+  | "sixteenths"
+  | "eighth two sixteenths";
+
+interface TimeSignature {
+  top: number;
+  bottom: number;
+}
 
 export const getNotesForScale = (
   key: string,
@@ -31,8 +31,8 @@ export const getNotesForScale = (
   const descendingNotes =
     mode === "melodic minor"
       ? Range.numeric([endNote, startNote])
-          .map(Scale.steps(`${key}${startOctave} minor`))
-          .slice(1)
+        .map(Scale.steps(`${key}${startOctave} minor`))
+        .slice(1)
       : ascendingNotes.toReversed().slice(1);
 
   return ascendingNotes
@@ -40,11 +40,6 @@ export const getNotesForScale = (
     .filter((note) => note != null)
     .map(Note.get);
 };
-
-export type RhythmPattern =
-  | "long octave"
-  | "sixteenths"
-  | "eighth two sixteenths";
 
 export const applyRhythmPattern = (
   notes: ReturnType<typeof Note.get>[],
@@ -56,17 +51,17 @@ export const applyRhythmPattern = (
     const duration = (() => {
       if (pattern === "long octave") {
         if (i % 7 === 0) {
-          return divisions.eighth;
+          return MusicXML.Divisions.eighth;
         } else {
-          return divisions["16th"];
+          return MusicXML.Divisions["16th"];
         }
       } else if (pattern === "sixteenths") {
-        return divisions["16th"];
+        return MusicXML.Divisions["16th"];
       } else if (pattern === "eighth two sixteenths") {
         if (i % 3 === 0) {
-          return divisions.eighth;
+          return MusicXML.Divisions.eighth;
         } else {
-          return divisions["16th"];
+          return MusicXML.Divisions["16th"];
         }
       } else {
         const _never: never = pattern;
@@ -80,115 +75,12 @@ export const applyRhythmPattern = (
   return result;
 };
 
-export interface MeasureNote {
-  pitch: {
-    step: string;
-    alter?: -1 | 1;
-    octave: number;
-  };
-
-  /**
-   * Duration of the note in beats. Relative to the divisions, which represents
-   * the division of a quarter note.
-   */
-  duration: number;
-}
-
-export interface MeasureAttributes {
-  key?: {
-    fifths: number;
-  };
-  time?: {
-    beats: number;
-    beatType: number;
-  };
-  clef?: {
-    sign: string;
-    line: number;
-  };
-}
-
-export interface Measure {
-  attributes?: MeasureAttributes;
-  notes: MeasureNote[];
-  doubleBar?: boolean;
-}
-
 export function generateMusicXMLForScale(opts: {
   key: string;
   mode: Mode;
   rhythm: RhythmPattern;
   octaves: number;
 }) {
-  const note = (note: MeasureNote) => {
-    const type = (() => {
-      if (note.duration === 1) {
-        return "16th";
-      } else if (note.duration === 2) {
-        return "eighth";
-      } else if (note.duration === 4) {
-        return "quarter";
-      } else if (note.duration === 8) {
-        return "half";
-      } else if (note.duration === 16) {
-        return "whole";
-      }
-
-      return "quarter";
-    })();
-
-    return `
-      <note>
-        <pitch>
-          <step>${note.pitch.step}</step>j
-          <alter>${note.pitch.alter ? note.pitch.alter : ""}</alter>
-          <octave>${note.pitch.octave}</octave>
-        </pitch>
-        <duration>${note.duration}</duration>
-        <type>${type}</type>
-      </note>
-    `;
-  };
-
-  const attributes = (attributes: MeasureAttributes) => {
-    return `
-      <attributes>
-        <divisions>${divisions.quarter}</divisions>
-        ${attributes.key?.fifths ? `<key><fifths>${attributes.key.fifths}</fifths></key>` : ""}
-        <time>
-          <beats>${attributes.time?.beats}</beats>
-          <beat-type>${attributes.time?.beatType}</beat-type>
-        </time>
-        <clef>
-          <sign>${attributes.clef?.sign}</sign>
-          <line>${attributes.clef?.line}</line>
-        </clef>
-      </attributes>
-    `;
-  };
-
-  const measure = (measure: Measure) => {
-    const doubleBarXML = `
-      <barline location="right">
-        <bar-style>light-heavy</bar-style>
-      </barline>
-    `;
-
-    const notesXML = measure.notes.map(note).join("");
-
-    return `
-      <measure>
-        ${measure.attributes ? attributes(measure.attributes) : ""}
-        ${notesXML}
-        ${measure.doubleBar ? doubleBarXML : ""}
-      </measure>
-    `;
-  };
-
-  const getMeasureDuration = (measure: Measure) => {
-    return measure.notes.reduce((acc, note) => acc + note.duration, 0);
-  };
-
   const notes = getNotesForScale(
     opts.key,
     opts.mode,
@@ -198,15 +90,16 @@ export function generateMusicXMLForScale(opts: {
   );
   const notesWithRhythm = applyRhythmPattern(notes, opts.rhythm);
 
-  const measures: Measure[] = [];
-  let currentMeasure: Measure = { notes: [] };
+  const measures: MusicXML.Measure[] = [];
+  let currentMeasure: MusicXML.Measure = { notes: [] };
   let timeAccumulator = 0;
 
-  const timeSignatureNumeralTop =
-    opts.rhythm === "eighth two sixteenths" ? 6 : 4;
-  const timeSignatureNumeralBottom = 4;
+  const timeSignature: TimeSignature = {
+    top: opts.rhythm === "eighth two sixteenths" ? 6 : 4,
+    bottom: 4
+  }
 
-  const measureDuration = divisions.quarter * timeSignatureNumeralTop;
+  const measureDuration = MusicXML.Divisions.quarter * timeSignature.top;
 
   for (const currentNote of notesWithRhythm) {
     const newNote = {
@@ -242,23 +135,23 @@ export function generateMusicXMLForScale(opts: {
       const tonic = currentMeasure.notes[currentMeasure.notes.length - 1];
 
       // pad out the last measure
-      while (getMeasureDuration(currentMeasure) < measureDuration) {
+      while (MusicXML.getDuration(currentMeasure) < measureDuration) {
         currentMeasure.notes.push({
           ...tonic,
-          duration: divisions["16th"],
+          duration: MusicXML.Divisions["16th"],
         });
       }
 
       measures.push(currentMeasure);
       // land on whole note tonic
       // TODO handle 6/4
-      measures.push({ notes: [{ ...tonic, duration: divisions.whole }] });
+      measures.push({ notes: [{ ...tonic, duration: MusicXML.Divisions.whole }] });
     }
 
     if (currentMeasure.notes.length === 1) {
       // Extend the last note
       const lastNote = currentMeasure.notes[0];
-      lastNote.duration = divisions.whole;
+      lastNote.duration = MusicXML.Divisions.whole;
       measures.push(currentMeasure);
     }
   }
@@ -279,34 +172,21 @@ export function generateMusicXMLForScale(opts: {
       }
     })();
 
+    // Add attributes to first measure
+    const trebleClef = { sign: "G", line: 2 };
     measures[0].attributes = {
       key: { fifths: key.alteration },
       time: {
-        beats: timeSignatureNumeralTop,
-        beatType: timeSignatureNumeralBottom,
+        beats: timeSignature.top,
+        beatType: timeSignature.bottom,
       },
-      clef: { sign: "G", line: 2 },
+      clef: trebleClef,
     };
 
+    // Double bar last measure
     measures[measures.length - 1].doubleBar = true;
   }
 
-  const measuresXML = measures.map(measure).join("");
-
-  const xml = `
-    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-    <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 3.1 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
-    <score-partwise version="4.0">
-      <part-list>
-        <score-part id="P1">
-          <part-name>Music</part-name>
-        </score-part>
-      </part-list>
-      <part id="P1">
-        ${measuresXML}
-      </part>
-    </score-partwise>
-  `;
-
+  const xml = MusicXML.generateMusicXML(measures)
   return xml;
 }
