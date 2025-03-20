@@ -120,10 +120,9 @@ export function generateMusicXMLForScale(opts: {
     const newNote = {
       pitch: {
         step: currentNote.note.letter,
-        alter: currentNote.note.alt
-          ? 1
-          : currentNote.note.alt === -1
-            ? -1
+        alter:
+          currentNote.note.alt === 1 || currentNote.note.alt === -1
+            ? currentNote.note.alt
             : undefined,
         octave: currentNote.note.oct ?? 4,
       },
