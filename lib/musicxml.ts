@@ -92,7 +92,6 @@ export namespace MusicXML {
     `;
   };
 
-
   const measureToMusicXML = (measure: Measure) => {
     const doubleBarXML = `
       <barline location="right">
@@ -130,5 +129,5 @@ export namespace MusicXML {
     `;
 
     return xml;
-  }
+  };
 }

@@ -31,8 +31,8 @@ export const getNotesForScale = (
   const descendingNotes =
     mode === "melodic minor"
       ? Range.numeric([endNote, startNote])
-        .map(Scale.steps(`${key}${startOctave} minor`))
-        .slice(1)
+          .map(Scale.steps(`${key}${startOctave} minor`))
+          .slice(1)
       : ascendingNotes.toReversed().slice(1);
 
   return ascendingNotes
@@ -80,11 +80,12 @@ export function generateMusicXMLForScale(opts: {
   mode: Mode;
   rhythm: RhythmPattern;
   octaves: number;
+  startOctave: number;
 }) {
   const notes = getNotesForScale(
     opts.key,
     opts.mode,
-    4,
+    opts.startOctave,
     opts.octaves,
     opts.rhythm === "sixteenths" || opts.rhythm === "eighth two sixteenths",
   );
@@ -96,8 +97,8 @@ export function generateMusicXMLForScale(opts: {
 
   const timeSignature: TimeSignature = {
     top: opts.rhythm === "eighth two sixteenths" ? 6 : 4,
-    bottom: 4
-  }
+    bottom: 4,
+  };
 
   const measureDuration = MusicXML.Divisions.quarter * timeSignature.top;
 
@@ -145,7 +146,9 @@ export function generateMusicXMLForScale(opts: {
       measures.push(currentMeasure);
       // land on whole note tonic
       // TODO handle 6/4
-      measures.push({ notes: [{ ...tonic, duration: MusicXML.Divisions.whole }] });
+      measures.push({
+        notes: [{ ...tonic, duration: MusicXML.Divisions.whole }],
+      });
     }
 
     if (currentMeasure.notes.length === 1) {
@@ -187,6 +190,6 @@ export function generateMusicXMLForScale(opts: {
     measures[measures.length - 1].doubleBar = true;
   }
 
-  const xml = MusicXML.generateMusicXML(measures)
+  const xml = MusicXML.generateMusicXML(measures);
   return xml;
 }

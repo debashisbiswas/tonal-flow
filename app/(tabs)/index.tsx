@@ -45,17 +45,66 @@ const CustomDropdown = <T,>(props: {
   );
 };
 
+const availableKeys: { label: string; value: string }[] = [
+  { label: "C", value: "C" },
+  { label: "C#", value: "C#" },
+  { label: "Db", value: "Db" },
+  { label: "D", value: "D" },
+  { label: "D#", value: "D#" },
+  { label: "Eb", value: "Eb" },
+  { label: "E", value: "E" },
+  { label: "F", value: "F" },
+  { label: "F#", value: "F#" },
+  { label: "Gb", value: "Gb" },
+  { label: "G", value: "G" },
+  { label: "G#", value: "G#" },
+  { label: "Ab", value: "Ab" },
+  { label: "A", value: "A" },
+  { label: "A#", value: "A#" },
+  { label: "Bb", value: "Bb" },
+  { label: "B", value: "B" },
+];
+
+const availableModes: {
+  label: string;
+  value: Mode;
+}[] = [
+  { label: "Major", value: "major" },
+  { label: "Minor", value: "minor" },
+  { label: "Harmonic Minor", value: "harmonic minor" },
+  { label: "Melodic Minor", value: "melodic minor" },
+];
+
+const availableRhythms: { label: string; value: RhythmPattern }[] = [
+  { label: "Long Octave", value: "long octave" },
+  { label: "Sixteenths", value: "sixteenths" },
+  { label: "Eighth, Two Sixteenths", value: "eighth two sixteenths" },
+];
+
+const availableOctaves = [
+  { label: "1", value: 1 },
+  { label: "2", value: 2 },
+  { label: "3", value: 3 },
+];
+
+const availableStartOctaves = [
+  { label: "3", value: 3 },
+  { label: "4", value: 4 },
+];
+
 export default function MusicScreen() {
   const [key, setKey] = useState<string>("C");
   const [mode, setMode] = useState<Mode>("major");
   const [rhythm, setRhythm] = useState<RhythmPattern>("long octave");
   const [octaves, setOctaves] = useState(1);
+  const [startOctave, setStartOctave] = useState(4);
 
   const xml = generateMusicXMLForScale({
     key,
     mode,
     rhythm,
     octaves,
+    startOctave,
   });
 
   const htmlContent = `
@@ -92,43 +141,6 @@ export default function MusicScreen() {
 </html>
   `;
 
-  const availableKeys: { label: string; value: string }[] = [
-    { label: "C", value: "C" },
-    { label: "Db", value: "Db" },
-    { label: "D", value: "D" },
-    { label: "Eb", value: "Eb" },
-    { label: "E", value: "E" },
-    { label: "F", value: "F" },
-    { label: "Gb", value: "Gb" },
-    { label: "G", value: "G" },
-    { label: "Ab", value: "Ab" },
-    { label: "A", value: "A" },
-    { label: "Bb", value: "Bb" },
-    { label: "B", value: "B" },
-  ];
-
-  const availableModes: {
-    label: string;
-    value: Mode;
-  }[] = [
-    { label: "Major", value: "major" },
-    { label: "Minor", value: "minor" },
-    { label: "Harmonic Minor", value: "harmonic minor" },
-    { label: "Melodic Minor", value: "melodic minor" },
-  ];
-
-  const availableRhythms: { label: string; value: RhythmPattern }[] = [
-    { label: "Long Octave", value: "long octave" },
-    { label: "Sixteenths", value: "sixteenths" },
-    { label: "Eighth, Two Sixteenths", value: "eighth two sixteenths" },
-  ];
-
-  const availableOctaves = [
-    { label: "1", value: 1 },
-    { label: "2", value: 2 },
-    { label: "3", value: 3 },
-  ];
-
   return (
     <SafeAreaProvider>
       <SafeAreaView>
@@ -163,6 +175,13 @@ export default function MusicScreen() {
               data={availableOctaves}
               onChange={(item) => setOctaves(item.value)}
               value={octaves}
+              style={styles.option}
+            />
+
+            <CustomDropdown
+              data={availableStartOctaves}
+              onChange={(item) => setStartOctave(item.value)}
+              value={startOctave}
               style={styles.option}
             />
           </View>
