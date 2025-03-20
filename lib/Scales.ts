@@ -1,7 +1,9 @@
 import { Key, Note, Scale, Range } from "tonal";
 import { MusicXML } from "./musicxml";
 
-export type Mode = "major" | "minor" | "harmonic minor" | "melodic minor";
+const Modes = ["major", "minor", "harmonic minor", "melodic minor"] as const;
+
+export type Mode = (typeof Modes)[number];
 export type Rhythm = "quarter" | "eighth" | "sixteenth";
 export type RhythmPattern =
   | "long octave"
@@ -170,20 +172,7 @@ export function generateMusicXMLForScale(opts: {
   }
 
   if (measures.length > 0) {
-    const key = (() => {
-      if (opts.mode === "major") {
-        return Key.majorKey(opts.key);
-      } else if (
-        opts.mode === "minor" ||
-        opts.mode === "harmonic minor" ||
-        opts.mode === "melodic minor"
-      ) {
-        return Key.minorKey(opts.key);
-      } else {
-        const _never: never = opts.mode;
-        throw new Error(`Unexpected mode: ${_never}`);
-      }
-    })();
+    const key = getKeyWithMode(opts.key, opts.mode);
 
     // Add attributes to first measure
     const trebleClef = { sign: "G", line: 2 };
@@ -203,3 +192,25 @@ export function generateMusicXMLForScale(opts: {
   const xml = MusicXML.generateMusicXML(measures);
   return xml;
 }
+
+const getKeyWithMode = (key: string, mode: Mode) => {
+  if (mode === "major") {
+    return Key.majorKey(key);
+  } else if (
+    mode === "minor" ||
+    mode === "harmonic minor" ||
+    mode === "melodic minor"
+  ) {
+    return Key.minorKey(key);
+  } else {
+    const _never: never = mode;
+    throw new Error(`Unexpected mode: ${_never}`);
+  }
+};
+
+export const getAvailableModes = (forKey: string): Mode[] => {
+  return Modes.filter((mode) => {
+    const key = getKeyWithMode(forKey, mode);
+    return Math.abs(key.alteration) <= 7;
+  });
+};

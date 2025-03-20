@@ -12,7 +12,12 @@ import { ThemedText } from "@/components/ThemedText";
 import { useState } from "react";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { Dropdown } from "react-native-element-dropdown";
-import { generateMusicXMLForScale, Mode, RhythmPattern } from "@/lib/Scales";
+import {
+  generateMusicXMLForScale,
+  getAvailableModes,
+  Mode,
+  RhythmPattern,
+} from "@/lib/Scales";
 
 const CustomDropdown = <T,>(props: {
   data: { label: string; value: T }[];
@@ -99,6 +104,11 @@ export default function MusicScreen() {
   const [octaves, setOctaves] = useState(1);
   const [startOctave, setStartOctave] = useState(4);
 
+  const availableModesForKey = getAvailableModes(key);
+  if (!availableModesForKey.includes(mode)) {
+    setMode(availableModesForKey[0]);
+  }
+
   const xml = generateMusicXMLForScale({
     key,
     mode,
@@ -158,7 +168,9 @@ export default function MusicScreen() {
             />
 
             <CustomDropdown
-              data={availableModes}
+              data={availableModes.filter(({ value }) =>
+                availableModesForKey.includes(value),
+              )}
               onChange={(item) => setMode(item.value)}
               value={mode}
               style={styles.option}
