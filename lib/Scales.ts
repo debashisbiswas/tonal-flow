@@ -87,7 +87,8 @@ export function generateMusicXMLForScale(opts: {
     opts.mode,
     opts.startOctave,
     opts.octaves,
-    opts.rhythm === "sixteenths" || opts.rhythm === "eighth two sixteenths",
+    opts.rhythm === "sixteenths" ||
+      (opts.rhythm === "eighth two sixteenths" && opts.octaves === 1),
   );
   const notesWithRhythm = applyRhythmPattern(notes, opts.rhythm);
 
@@ -95,8 +96,21 @@ export function generateMusicXMLForScale(opts: {
   let currentMeasure: MusicXML.Measure = { notes: [] };
   let timeAccumulator = 0;
 
+  const timeSignatureTop = (() => {
+    if (opts.rhythm === "eighth two sixteenths") {
+      if (opts.octaves === 1) {
+        return 6;
+      } else if (opts.octaves === 2) {
+        return 5;
+      } else if (opts.octaves === 3) {
+        return 7;
+      }
+    }
+    return 4;
+  })();
+
   const timeSignature: TimeSignature = {
-    top: opts.rhythm === "eighth two sixteenths" ? 6 : 4,
+    top: timeSignatureTop,
     bottom: 4,
   };
 
@@ -126,9 +140,6 @@ export function generateMusicXMLForScale(opts: {
       timeAccumulator = 0;
     }
   }
-
-  console.log("==========");
-  console.log(JSON.stringify(currentMeasure, null, 2));
 
   if (currentMeasure.notes.length > 0) {
     // if the last note is longer than the (worst case: eighth) we would have landed on...
