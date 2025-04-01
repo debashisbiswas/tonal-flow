@@ -7,6 +7,11 @@ export namespace MusicXML {
     };
 
     /**
+     * If not specified, a slur in progress will be continued.
+     */
+    slurState?: "start" | "stop";
+
+    /**
      * Duration of the note in beats. Relative to the divisions, which represents
      * the division of a quarter note.
      */
@@ -65,12 +70,15 @@ export namespace MusicXML {
     return `
       <note>
         <pitch>
-          <step>${note.pitch.step}</step>j
+          <step>${note.pitch.step}</step>
           <alter>${note.pitch.alter ? note.pitch.alter : ""}</alter>
           <octave>${note.pitch.octave}</octave>
         </pitch>
         <duration>${note.duration}</duration>
         <type>${type}</type>
+        <notations>
+          ${note.slurState ? `<slur type="${note.slurState}"></slur>` : ""}
+        </notations>
       </note>
     `;
   };

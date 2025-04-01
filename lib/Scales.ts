@@ -10,6 +10,21 @@ export type RhythmPattern =
   | "sixteenths"
   | "eighth two sixteenths";
 
+export type SlurPattern =
+  // twos
+  | "slur two tongue two"
+  | "tongue two slur two"
+  | "slur two slur two"
+  | "tongue one slur two tongue one"
+
+  // threes
+  | "tongue one slur three"
+  | "slur three tongue one"
+
+  // fours
+  | "tongued"
+  | "slur four";
+
 interface TimeSignature {
   top: number;
   bottom: number;
@@ -77,10 +92,62 @@ export const applyRhythmPattern = (
   return result;
 };
 
+function getSlurType(
+  slurPattern: SlurPattern,
+  timeAccumulator: number,
+): MusicXML.MeasureNote["slurState"] {
+  const mod4 = timeAccumulator % 4;
+
+  switch (slurPattern) {
+    case "slur two tongue two":
+      if (mod4 === 0) return "start";
+      if (mod4 === 1) return "stop";
+      break;
+
+    case "tongue two slur two":
+      if (mod4 === 2) return "start";
+      if (mod4 === 3) return "stop";
+      break;
+
+    case "slur two slur two":
+      if (mod4 === 0 || mod4 === 2) return "start";
+      if (mod4 === 1 || mod4 === 3) return "stop";
+      break;
+
+    case "tongue one slur two tongue one":
+      if (mod4 === 1) return "start";
+      if (mod4 === 2) return "stop";
+      break;
+
+    case "slur three tongue one":
+      if (mod4 === 0) return "start";
+      if (mod4 === 2) return "stop";
+      break;
+
+    case "tongue one slur three":
+      if (mod4 === 1) return "start";
+      if (mod4 === 3) return "stop";
+      break;
+
+    case "slur four":
+      if (mod4 === 0) return "start";
+      if (mod4 === 3) return "stop";
+      break;
+
+    case "tongued":
+      break;
+
+    default:
+      const _never: never = slurPattern;
+      throw new Error(`Unexpected slur pattern: ${_never}`);
+  }
+}
+
 export function generateMusicXMLForScale(opts: {
   key: string;
   mode: Mode;
   rhythm: RhythmPattern;
+  slurPattern: SlurPattern;
   octaves: number;
   startOctave: number;
 }) {
@@ -168,6 +235,18 @@ export function generateMusicXMLForScale(opts: {
       const lastNote = currentMeasure.notes[0];
       lastNote.duration = MusicXML.Divisions.whole;
       measures.push(currentMeasure);
+    }
+  }
+
+  for (const measure of measures) {
+    let timeAccumulator = 0;
+    for (const note of measure.notes) {
+      if (note.duration !== MusicXML.Divisions.whole) {
+        const slurState = getSlurType(opts.slurPattern, timeAccumulator);
+        note.slurState = slurState;
+      }
+
+      timeAccumulator += note.duration;
     }
   }
 

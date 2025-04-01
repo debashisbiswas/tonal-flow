@@ -7,8 +7,6 @@ import {
   ViewStyle,
 } from "react-native";
 
-import { ThemedText } from "@/components/ThemedText";
-
 import { useState } from "react";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { Dropdown } from "react-native-element-dropdown";
@@ -17,6 +15,7 @@ import {
   getAvailableModes,
   Mode,
   RhythmPattern,
+  SlurPattern,
 } from "@/lib/Scales";
 
 const CustomDropdown = <T,>(props: {
@@ -32,6 +31,7 @@ const CustomDropdown = <T,>(props: {
       style={[styles.dropdown, props.style, isFocus && { borderColor: "blue" }]}
       placeholderStyle={styles.placeholderStyle}
       selectedTextStyle={styles.selectedTextStyle}
+      containerStyle={styles.containerStyle}
       iconStyle={styles.iconStyle}
       data={props.data}
       maxHeight={300}
@@ -97,12 +97,27 @@ const availableStartOctaves = [
   { label: "4", value: 4 },
 ];
 
+const availableSlurPatterns: { label: string; value: SlurPattern }[] = [
+  { label: "slur two, tongue two", value: "slur two tongue two" },
+  { label: "tongue two, slur two", value: "tongue two slur two" },
+  { label: "slur two, slur two", value: "slur two slur two" },
+  {
+    label: "tongue one, slur two, tongue one",
+    value: "tongue one slur two tongue one",
+  },
+  { label: "tongue one, slur three", value: "tongue one slur three" },
+  { label: "slur three, tongue one", value: "slur three tongue one" },
+  { label: "tongued", value: "tongued" },
+  { label: "slur four", value: "slur four" },
+];
+
 export default function MusicScreen() {
   const [key, setKey] = useState<string>("C");
   const [mode, setMode] = useState<Mode>("major");
   const [rhythm, setRhythm] = useState<RhythmPattern>("long octave");
   const [octaves, setOctaves] = useState(1);
   const [startOctave, setStartOctave] = useState(4);
+  const [slurPattern, setSlurPattern] = useState<SlurPattern>("tongued");
 
   const availableModesForKey = getAvailableModes(key);
   if (!availableModesForKey.includes(mode)) {
@@ -113,6 +128,7 @@ export default function MusicScreen() {
     key,
     mode,
     rhythm,
+    slurPattern,
     octaves,
     startOctave,
   });
@@ -155,10 +171,6 @@ export default function MusicScreen() {
     <SafeAreaProvider>
       <SafeAreaView>
         <ScrollView>
-          <ThemedText type="title" style={styles.title}>
-            Tonal Flow
-          </ThemedText>
-
           <View style={styles.optionsContainer}>
             <CustomDropdown
               data={availableKeys}
@@ -194,6 +206,13 @@ export default function MusicScreen() {
               data={availableStartOctaves}
               onChange={(item) => setStartOctave(item.value)}
               value={startOctave}
+              style={styles.option}
+            />
+
+            <CustomDropdown
+              data={availableSlurPatterns}
+              onChange={(item) => setSlurPattern(item.value)}
+              value={slurPattern}
               style={styles.option}
             />
           </View>
@@ -263,5 +282,9 @@ const styles = StyleSheet.create({
   inputSearchStyle: {
     height: 40,
     fontSize: 16,
+  },
+
+  containerStyle: {
+    width: 350,
   },
 });
