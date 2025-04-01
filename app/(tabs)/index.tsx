@@ -87,28 +87,28 @@ const availableRhythms: { label: string; value: RhythmPattern }[] = [
 ];
 
 const availableOctaves = [
-  { label: "1", value: 1 },
-  { label: "2", value: 2 },
-  { label: "3", value: 3 },
+  { label: "1 octave", value: 1 },
+  { label: "2 octaves", value: 2 },
+  { label: "3 octaves", value: 3 },
 ];
 
 const availableStartOctaves = [
-  { label: "3", value: 3 },
-  { label: "4", value: 4 },
+  { label: "Start on octave 3", value: 3 },
+  { label: "Start on octave 4", value: 4 },
 ];
 
 const availableSlurPatterns: { label: string; value: SlurPattern }[] = [
-  { label: "slur two, tongue two", value: "slur two tongue two" },
-  { label: "tongue two, slur two", value: "tongue two slur two" },
-  { label: "slur two, slur two", value: "slur two slur two" },
+  { label: "Slur two, tongue two", value: "slur two tongue two" },
+  { label: "Tongue two, slur two", value: "tongue two slur two" },
+  { label: "Slur two, slur two", value: "slur two slur two" },
   {
-    label: "tongue one, slur two, tongue one",
+    label: "Tongue one, slur two, tongue one",
     value: "tongue one slur two tongue one",
   },
-  { label: "tongue one, slur three", value: "tongue one slur three" },
-  { label: "slur three, tongue one", value: "slur three tongue one" },
-  { label: "tongued", value: "tongued" },
-  { label: "slur four", value: "slur four" },
+  { label: "Tongue one, slur three", value: "tongue one slur three" },
+  { label: "Slur three, tongue one", value: "slur three tongue one" },
+  { label: "Tongued", value: "tongued" },
+  { label: "Slur four", value: "slur four" },
 ];
 
 export default function MusicScreen() {
@@ -189,13 +189,6 @@ export default function MusicScreen() {
             />
 
             <CustomDropdown
-              data={availableRhythms}
-              onChange={(item) => setRhythm(item.value)}
-              value={rhythm}
-              style={styles.option}
-            />
-
-            <CustomDropdown
               data={availableOctaves}
               onChange={(item) => setOctaves(item.value)}
               value={octaves}
@@ -206,6 +199,13 @@ export default function MusicScreen() {
               data={availableStartOctaves}
               onChange={(item) => setStartOctave(item.value)}
               value={startOctave}
+              style={styles.option}
+            />
+
+            <CustomDropdown
+              data={availableRhythms}
+              onChange={(item) => setRhythm(item.value)}
+              value={rhythm}
               style={styles.option}
             />
 
