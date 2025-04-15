@@ -96,42 +96,42 @@ function getSlurType(
   slurPattern: SlurPattern,
   timeAccumulator: number,
 ): MusicXML.MeasureNote["slurState"] {
-  const mod4 = timeAccumulator % 4;
+  const currentSixteenth = timeAccumulator % 4;
 
   switch (slurPattern) {
     case "slur two tongue two":
-      if (mod4 === 0) return "start";
-      if (mod4 === 1) return "stop";
+      if (currentSixteenth === 0) return "start";
+      if (currentSixteenth === 1) return "stop";
       break;
 
     case "tongue two slur two":
-      if (mod4 === 2) return "start";
-      if (mod4 === 3) return "stop";
+      if (currentSixteenth === 2) return "start";
+      if (currentSixteenth === 3) return "stop";
       break;
 
     case "slur two slur two":
-      if (mod4 === 0 || mod4 === 2) return "start";
-      if (mod4 === 1 || mod4 === 3) return "stop";
+      if (currentSixteenth === 0 || currentSixteenth === 2) return "start";
+      if (currentSixteenth === 1 || currentSixteenth === 3) return "stop";
       break;
 
     case "tongue one slur two tongue one":
-      if (mod4 === 1) return "start";
-      if (mod4 === 2) return "stop";
+      if (currentSixteenth === 1) return "start";
+      if (currentSixteenth === 2) return "stop";
       break;
 
     case "slur three tongue one":
-      if (mod4 === 0) return "start";
-      if (mod4 === 2) return "stop";
+      if (currentSixteenth === 0) return "start";
+      if (currentSixteenth === 2) return "stop";
       break;
 
     case "tongue one slur three":
-      if (mod4 === 1) return "start";
-      if (mod4 === 3) return "stop";
+      if (currentSixteenth === 1) return "start";
+      if (currentSixteenth === 3) return "stop";
       break;
 
     case "slur four":
-      if (mod4 === 0) return "start";
-      if (mod4 === 3) return "stop";
+      if (currentSixteenth === 0) return "start";
+      if (currentSixteenth === 3) return "stop";
       break;
 
     case "tongued":
