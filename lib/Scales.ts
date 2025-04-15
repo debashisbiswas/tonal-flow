@@ -143,6 +143,10 @@ function getSlurType(
   }
 }
 
+function narrowAlter(alt: number) {
+  return alt === 1 || alt === -1 ? alt : undefined;
+}
+
 export function generateMusicXMLForScale(opts: {
   key: string;
   mode: Mode;
@@ -189,10 +193,7 @@ export function generateMusicXMLForScale(opts: {
     const newNote = {
       pitch: {
         step: currentNote.note.letter,
-        alter:
-          currentNote.note.alt === 1 || currentNote.note.alt === -1
-            ? currentNote.note.alt
-            : undefined,
+        alter: narrowAlter(currentNote.note.alt),
         octave: currentNote.note.oct ?? 4,
       },
       duration: currentNote.duration,
@@ -210,8 +211,81 @@ export function generateMusicXMLForScale(opts: {
   }
 
   if (currentMeasure.notes.length > 0) {
-    // if the last note is longer than the (worst case: eighth) we would have landed on...
-    if (currentMeasure.notes.length > 2) {
+    const remainingDuration =
+      measureDuration - MusicXML.getDuration(currentMeasure);
+
+    if (remainingDuration === 3) {
+      // 1 3 5 3 1
+      const tonic = currentMeasure.notes[currentMeasure.notes.length - 1];
+      const third = Note.get(
+        Note.transpose(
+          `${tonic.pitch.step}${tonic.pitch.octave}`,
+          `3${getDescendingThirdModeLetter(opts.key, opts.mode)}`,
+        ),
+      );
+      const fifth = Note.get(
+        Note.transpose(`${tonic.pitch.step}${tonic.pitch.octave}`, "5P"),
+      );
+
+      currentMeasure.notes.push({
+        pitch: {
+          step: third.letter,
+          alter: narrowAlter(third.alt),
+          octave: third.oct ?? 4,
+        },
+        duration: MusicXML.Divisions["16th"],
+      });
+
+      currentMeasure.notes.push({
+        pitch: {
+          step: fifth.letter,
+          alter: narrowAlter(fifth.alt),
+          octave: fifth.oct ?? 4,
+        },
+        duration: MusicXML.Divisions["16th"],
+      });
+
+      currentMeasure.notes.push({
+        pitch: {
+          step: third.letter,
+          alter: narrowAlter(third.alt),
+          octave: third.oct ?? 4,
+        },
+        duration: MusicXML.Divisions["16th"],
+      });
+
+      measures.push(currentMeasure);
+      // land on whole note tonic
+      measures.push({
+        notes: [{ ...tonic, duration: MusicXML.Divisions.whole }],
+      });
+    } else if (remainingDuration === 1) {
+      const tonic = currentMeasure.notes[currentMeasure.notes.length - 1];
+      const fifth = Note.get(
+        Note.transpose(`${tonic.pitch.step}${tonic.pitch.octave}`, "5P"),
+      );
+
+      currentMeasure.notes.push({
+        pitch: {
+          step: fifth.letter,
+          alter: narrowAlter(fifth.alt),
+          octave: fifth.oct ?? 4,
+        },
+        duration: MusicXML.Divisions["16th"],
+      });
+
+      measures.push(currentMeasure);
+      // land on whole note tonic
+      measures.push({
+        notes: [{ ...tonic, duration: MusicXML.Divisions.whole }],
+      });
+    } else if (currentMeasure.notes.length === 1) {
+      // Extend the last note
+      const lastNote = currentMeasure.notes[0];
+      lastNote.duration = MusicXML.Divisions.whole;
+      measures.push(currentMeasure);
+    } else if (currentMeasure.notes.length > 2) {
+      // if the last note is longer than the (worst case: eighth) we would have landed on...
       const tonic = currentMeasure.notes[currentMeasure.notes.length - 1];
 
       // pad out the last measure
@@ -224,17 +298,9 @@ export function generateMusicXMLForScale(opts: {
 
       measures.push(currentMeasure);
       // land on whole note tonic
-      // TODO handle 6/4
       measures.push({
         notes: [{ ...tonic, duration: MusicXML.Divisions.whole }],
       });
-    }
-
-    if (currentMeasure.notes.length === 1) {
-      // Extend the last note
-      const lastNote = currentMeasure.notes[0];
-      lastNote.duration = MusicXML.Divisions.whole;
-      measures.push(currentMeasure);
     }
   }
 
@@ -281,6 +347,21 @@ const getKeyWithMode = (key: string, mode: Mode) => {
     mode === "melodic minor"
   ) {
     return Key.minorKey(key);
+  } else {
+    const _never: never = mode;
+    throw new Error(`Unexpected mode: ${_never}`);
+  }
+};
+
+const getDescendingThirdModeLetter = (key: string, mode: Mode) => {
+  if (mode === "major") {
+    return "M";
+  } else if (
+    mode === "minor" ||
+    mode === "harmonic minor" ||
+    mode === "melodic minor"
+  ) {
+    return "m";
   } else {
     const _never: never = mode;
     throw new Error(`Unexpected mode: ${_never}`);
