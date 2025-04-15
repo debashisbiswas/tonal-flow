@@ -1,52 +1,58 @@
-import { WebView } from "react-native-webview";
 import {
-  ScrollView,
   StyleProp,
   StyleSheet,
   View,
   ViewStyle,
+  TouchableOpacity,
+  ScrollView,
 } from "react-native";
-
 import { useState } from "react";
+import { router } from "expo-router";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { Dropdown } from "react-native-element-dropdown";
 import {
-  generateMusicXMLForScale,
   getAvailableModes,
   Mode,
   RhythmPattern,
   SlurPattern,
 } from "@/lib/Scales";
 
+import { ThemedText } from "@/components/ThemedText";
+import { useScaleOptions } from "@/lib/ScaleContext";
+
 const CustomDropdown = <T,>(props: {
   data: { label: string; value: T }[];
   onChange: (arg: { label: string; value: T }) => void;
   value: T;
   style?: StyleProp<ViewStyle>;
+  label: string;
 }) => {
   const [isFocus, setIsFocus] = useState(false);
 
   return (
-    <Dropdown
-      style={[styles.dropdown, props.style, isFocus && { borderColor: "blue" }]}
-      placeholderStyle={styles.placeholderStyle}
-      selectedTextStyle={styles.selectedTextStyle}
-      containerStyle={styles.containerStyle}
-      iconStyle={styles.iconStyle}
-      data={props.data}
-      maxHeight={300}
-      labelField="label"
-      valueField="value"
-      placeholder={!isFocus ? "Select item" : "..."}
-      searchPlaceholder="Search..."
-      value={props.value}
-      onFocus={() => setIsFocus(true)}
-      onBlur={() => setIsFocus(false)}
-      onChange={(item) => {
-        props.onChange({ label: item.label, value: item.value });
-        setIsFocus(false);
-      }}
-    />
+    <View style={props.style}>
+      <ThemedText style={styles.dropdownLabel}>{props.label}</ThemedText>
+      <Dropdown
+        style={[styles.dropdown, isFocus && { borderColor: "blue" }]}
+        placeholderStyle={styles.placeholderStyle}
+        selectedTextStyle={styles.selectedTextStyle}
+        containerStyle={styles.containerStyle}
+        iconStyle={styles.iconStyle}
+        data={props.data}
+        maxHeight={300}
+        labelField="label"
+        valueField="value"
+        placeholder={!isFocus ? "Select item" : "..."}
+        searchPlaceholder="Search..."
+        value={props.value}
+        onFocus={() => setIsFocus(true)}
+        onBlur={() => setIsFocus(false)}
+        onChange={(item) => {
+          props.onChange({ label: item.label, value: item.value });
+          setIsFocus(false);
+        }}
+      />
+    </View>
   );
 };
 
@@ -111,116 +117,92 @@ const availableSlurPatterns: { label: string; value: SlurPattern }[] = [
   { label: "Slur four", value: "slur four" },
 ];
 
-export default function MusicScreen() {
-  const [key, setKey] = useState<string>("C");
-  const [mode, setMode] = useState<Mode>("major");
-  const [rhythm, setRhythm] = useState<RhythmPattern>("long octave");
-  const [octaves, setOctaves] = useState(1);
-  const [startOctave, setStartOctave] = useState(4);
-  const [slurPattern, setSlurPattern] = useState<SlurPattern>("tongued");
+export default function HomeScreen() {
+  const { options, updateOptions } = useScaleOptions();
+  const { key, mode, rhythm, octaves, startOctave, slurPattern } = options;
 
   const availableModesForKey = getAvailableModes(key);
+
+  // Make sure the selected mode is valid for the current key
   if (!availableModesForKey.includes(mode)) {
-    setMode(availableModesForKey[0]);
+    updateOptions({ mode: availableModesForKey[0] });
   }
 
-  const xml = generateMusicXMLForScale({
-    key,
-    mode,
-    rhythm,
-    slurPattern,
-    octaves,
-    startOctave,
-  });
-
-  const htmlContent = `
-<!doctype html>
-<html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script src="https://unpkg.com/opensheetmusicdisplay@0.8.3/build/opensheetmusicdisplay.min.js"></script>
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="osmd-container"></div>
-    <script>
-      const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(
-        "osmd-container",
-        {
-          autoResize: true,
-          backend: "svg",
-          drawingParameters: "compacttight",
-          autoBeam: true,
-        },
-      );
-
-      osmd
-        .load(\`${xml}\`)
-        .then(() => osmd.render());
-    </script>
-  </body>
-</html>
-  `;
+  const navigateToMusicNotation = () => {
+    router.push("/scale");
+  };
 
   return (
     <SafeAreaProvider>
       <SafeAreaView>
         <ScrollView>
-          <View style={styles.optionsContainer}>
-            <CustomDropdown
-              data={availableKeys}
-              onChange={(item) => setKey(item.value)}
-              value={key}
-              style={styles.option}
-            />
-
-            <CustomDropdown
-              data={availableModes.filter(({ value }) =>
-                availableModesForKey.includes(value),
-              )}
-              onChange={(item) => setMode(item.value)}
-              value={mode}
-              style={styles.option}
-            />
-
-            <CustomDropdown
-              data={availableOctaves}
-              onChange={(item) => setOctaves(item.value)}
-              value={octaves}
-              style={styles.option}
-            />
-
-            <CustomDropdown
-              data={availableStartOctaves}
-              onChange={(item) => setStartOctave(item.value)}
-              value={startOctave}
-              style={styles.option}
-            />
-
-            <CustomDropdown
-              data={availableRhythms}
-              onChange={(item) => setRhythm(item.value)}
-              value={rhythm}
-              style={styles.option}
-            />
-
-            <CustomDropdown
-              data={availableSlurPatterns}
-              onChange={(item) => setSlurPattern(item.value)}
-              value={slurPattern}
-              style={styles.option}
-            />
+          <View style={styles.headerContainer}>
+            <ThemedText type="title">Tonal Flow</ThemedText>
           </View>
 
-          <WebView
-            style={styles.container}
-            originWhitelist={["*"]}
-            source={{ html: htmlContent }}></WebView>
+          <View style={styles.optionsContainer}>
+            <View style={styles.optionsRow}>
+              <CustomDropdown
+                label="Key"
+                data={availableKeys}
+                onChange={(item) => updateOptions({ key: item.value })}
+                value={key}
+                style={styles.optionColumn}
+              />
+
+              <CustomDropdown
+                label="Mode"
+                data={availableModes.filter(({ value }) =>
+                  availableModesForKey.includes(value),
+                )}
+                onChange={(item) => updateOptions({ mode: item.value })}
+                value={mode}
+                style={styles.optionColumn}
+              />
+
+              <CustomDropdown
+                label="Octaves"
+                data={availableOctaves}
+                onChange={(item) => updateOptions({ octaves: item.value })}
+                value={octaves}
+                style={styles.optionColumn}
+              />
+            </View>
+
+            <View style={styles.optionsRow}>
+              <CustomDropdown
+                label="Start Octave"
+                data={availableStartOctaves}
+                onChange={(item) => updateOptions({ startOctave: item.value })}
+                value={startOctave}
+                style={styles.optionColumn}
+              />
+
+              <CustomDropdown
+                label="Rhythm Pattern"
+                data={availableRhythms}
+                onChange={(item) => updateOptions({ rhythm: item.value })}
+                value={rhythm}
+                style={styles.optionColumn}
+              />
+
+              <CustomDropdown
+                label="Articulation"
+                data={availableSlurPatterns}
+                onChange={(item) => updateOptions({ slurPattern: item.value })}
+                value={slurPattern}
+                style={styles.optionColumn}
+              />
+            </View>
+          </View>
+
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={styles.startButton}
+              onPress={navigateToMusicNotation}>
+              <ThemedText style={styles.buttonText}>View Scale</ThemedText>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </SafeAreaProvider>
@@ -228,30 +210,37 @@ export default function MusicScreen() {
 }
 
 const styles = StyleSheet.create({
-  title: {
-    marginTop: 32,
+  headerContainer: {
+    padding: 10,
+    alignItems: "center",
+    marginTop: 10,
   },
-  container: {
-    flex: 1,
-    height: 200,
+  subtitle: {
+    marginTop: 5,
+    opacity: 0.8,
   },
-  row: {
-    flexDirection: "row",
-  },
-
   optionsContainer: {
+    padding: 15,
+    gap: 12,
+  },
+  optionsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 16,
-    marginTop: 32,
+    marginBottom: 10,
+    gap: 15,
   },
-
-  option: {
+  optionColumn: {
     flex: 1,
   },
-
+  option: {
+    marginBottom: 10,
+  },
+  dropdownLabel: {
+    fontSize: 15,
+    marginBottom: 4,
+  },
   dropdown: {
-    height: 50,
+    height: 45,
     borderColor: "gray",
     borderWidth: 0.5,
     borderRadius: 8,
@@ -270,10 +259,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   placeholderStyle: {
-    fontSize: 16,
+    fontSize: 14,
   },
   selectedTextStyle: {
-    fontSize: 16,
+    fontSize: 14,
   },
   iconStyle: {
     width: 20,
@@ -283,8 +272,25 @@ const styles = StyleSheet.create({
     height: 40,
     fontSize: 16,
   },
-
   containerStyle: {
-    width: 350,
+    maxWidth: 350,
+  },
+  buttonContainer: {
+    alignItems: "center",
+    marginVertical: 15,
+    paddingHorizontal: 20,
+  },
+  startButton: {
+    backgroundColor: "#0a7ea4",
+    paddingVertical: 12,
+    paddingHorizontal: 40,
+    borderRadius: 8,
+    width: "100%",
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
   },
 });
